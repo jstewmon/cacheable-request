@@ -99,6 +99,17 @@ test.before('setup', async () => {
 		res.end('cache-then-no-store-on-revalidate');
 	});
 
+	s.get('/echo', (req, res) => {
+		const { headers, query, path, originalUrl, body } = req;
+		res.json({
+			headers,
+			query,
+			path,
+			originalUrl,
+			body
+		});
+	});
+
 	await s.listen(s.port);
 });
 
@@ -277,6 +288,31 @@ test(
 	{ method: 'POST' },
 	'POST:http://localhost'
 );
+
+test('request options path query is passed through', async t => {
+	const cacheableRequest = new CacheableRequest(request);
+	const cacheableRequestHelper = promisify(cacheableRequest);
+	const argString = `${s.url}/echo?foo=bar`;
+	const argURL = new url.URL(argString);
+	const urlObject = url.parse(argString);
+	const argOptions = {
+		hostname: urlObject.hostname,
+		port: urlObject.port,
+		path: urlObject.path
+	};
+	const inputs = [argString, argURL, argOptions];
+	for (const input of inputs) {
+		// eslint-disable-next-line no-await-in-loop
+		const response = await cacheableRequestHelper(input);
+		const body = JSON.parse(response.body);
+		const message = util.format(
+			'when request arg is %s(%j)',
+			input.constructor.name,
+			input
+		);
+		t.is(body.query.foo, 'bar', message);
+	}
+});
 
 test('Setting opts.cache to false bypasses cache for a single request', async t => {
 	const endpoint = '/cache';

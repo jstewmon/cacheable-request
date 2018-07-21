@@ -35,8 +35,11 @@ class CacheableRequest {
 				url = normalizeUrlObject(urlLib.parse(opts.toString()));
 				opts = {};
 			} else {
-				const [pathname, ...search] = (opts.path || '').split('?');
-				url = normalizeUrlObject({ ...opts, pathname, search: search.join('?') });
+				const [pathname, ...searchParts] = (opts.path || '').split('?');
+				const search = searchParts.length > 0 ?
+					`?${searchParts.join('?')}` :
+					'';
+				url = normalizeUrlObject({ ...opts, pathname, search });
 			}
 			opts = {
 				headers: {},
